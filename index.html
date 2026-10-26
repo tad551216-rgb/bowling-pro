@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>方眼ボウリング - Grid Bowling Pro</title>
+<style>
+  :root {
+    --bg-dark: #070e17;
+    --blueprint-bg: #0b192c;
+    --grid-minor: rgba(56, 189, 248, 0.08);
+    --grid-major: rgba(56, 189, 248, 0.22);
+    --accent-cyan: #00f0ff;
+    --accent-amber: #ffaa00;
+    --accent-pink: #ff2a85;
+    --text-light: #e2f1ff;
+    --text-dim: #6e8ba8;
+    --panel-bg: rgba(11, 25, 44, 0.88);
+    --border-glow: rgba(0, 240, 255, 0.35);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  body {
+    background-color: var(--bg-dark);
+    color: var(--text-light);
+    font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Meiryo', monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 100dvh;
+    overflow: hidden;
+    background-image: 
+      radial-gradient(circle at 50% 30%, #102542 0%, #050a10 100%);
+  }
+
+  #app-container {
+    width: 100%;
+    max-width: 500px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border-left: 1px solid rgba(56, 189, 248, 0.15);
+    border-right: 1px solid rgba(56, 189, 248, 0.15);
+    background-color: var(--blueprint-bg);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  }
+
+  /* Header Section */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--panel-bg);
+    border-bottom: 1px solid var(--border-glow);
+    z-index: 10;
+  }
+
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  header h1 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--accent-cyan);
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
+  }
+
+  header h1 span {
+    color: var(--text-light);
+    font-weight: 400;
+    font-size: 1rem;
+  }
+
+  .spec-tag {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    border: 1px solid var(--text-dim);
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .btn-icon {
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid var(--border-glow);
+    color: var(--accent-cyan);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-icon:hover {
+    background: rgba(0, 240, 255, 0.25);
+  }
+
+  .total-score-box {
+    text-align: right;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 170, 0, 0.4);
+  }
+
+  .total-score-box .label {
+    font-size: 0.65rem;
+    color: var(--accent-amber);
+    display: block;
+    line-height: 1;
+  }
+
+  .total-score-box b {
+    font-size: 1.25rem;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 8px rgba(255, 170, 0, 0.6);
+  }
+
+  /* Scoreboard Grid */
+  #scoreboard {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr) 1.35fr;
+    background: rgba(5, 12, 22, 0.9);
+    border-bottom: 1px solid var(--border-glow);
+    z-index: 10;
+    width: 100%;
+  }
+
+  .frame-box {
+    border-right: 1px solid rgba(56, 189, 248, 0.2);
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    position: relative;
+  }
+
+  .frame-box:last-child {
+    border-right: none;
+  }
+
+  .frame-box.active {
+    background: rgba(0, 240, 255, 0.12);
+    box-shadow: inset 0 0 6px rgba(0, 240, 255, 0.35);
+  }
+
+  .frame-num {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    padding: 1px 0;
+  }
+
+  .frame-box.active .frame-num {
+    color: var(--accent-cyan);
+    font-weight: bold;
+  }
+
+  .rolls {
+    display: flex;
+    height: 18px;
+    font-size: 0.7rem;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+  }
+
+  .roll-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-left: 1px solid rgba(56, 189, 248, 0.12);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.12);
+  }
+
+  .roll-cell:first-child {
+    border-left: none;
+  }
+
+  .frame-total {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--accent-amber);
+    font-family: 'Courier New', monospace;
+  }
+
+  /* Main Game Canvas Area */
+  #game-stage {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    touch-action: none;
+  }
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Position & Spin HUD Controls */
+  #hud-controls {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 88%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .hud-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(7, 16, 30, 0.82);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    padding: 5px 12px;
+    border-radius: 6px;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+  }
+
+  .hud-label {
+    font-size: 0.7rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 150px;
+    height: 4px;
+    background: rgba(0, 240, 255, 0.25);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent-cyan);
+    box-shadow: 0 0 8px var(--accent-cyan);
+    cursor: pointer;
+  }
+
+  /* Callout Banner (STRIKE / SPARE / GUTTER) */
+  #banner-overlay {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+    text-align: center;
+    transition: transform 0.35s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.25s ease;
+  }
+
+  #banner-overlay.show {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  .banner-title {
+    font-size: 2.8rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    font-style: italic;
+    color: #fff;
+    text-shadow: 0 0 15px var(--accent-cyan), 0 0 30px var(--accent-cyan);
+    border-top: 2px solid var(--accent-cyan);
+    border-bottom: 2px solid var(--accent-cyan);
+    background: rgba(7, 16, 30, 0.85);
+    padding: 6px 28px;
+  }
+
+  .banner-sub {
+    font-size: 0.85rem;
+    color: var(--accent-amber);
+    margin-top: 4px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-shadow: 0 0 6px rgba(0,0,0,0.9);
+  }
+
+  /* Game Over Modal */
+  #result-modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 11, 20, 0.88);
+    backdrop-filter: blur(6px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 30;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+  }
+
+  #result-modal.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .modal-card {
+    background: var(--blueprint-bg);
+    border: 1px solid var(--accent-cyan);
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+    padding: 28px 36px;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 85%;
+    width: 320px;
+  }
+
+  .modal-card h2 {
+    font-size: 1.2rem;
+    color: var(--text-dim);
+    letter-spacing: 3px;
+    margin-bottom: 8px;
+  }
+
+  .final-score {
+    font-size: 3.6rem;
+    font-weight: 900;
+    color: var(--accent-amber);
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 18px rgba(255, 170, 0, 0.5);
+    margin: 8px 0;
+  }
+
+  .rank-badge {
+    display: inline-block;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    background: rgba(0, 240, 255, 0.15);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    margin-bottom: 18px;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 22px;
+    font-size: 0.78rem;
+    text-align: left;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 4px;
+  }
+
+  . stats-item span {
+    color: var(--text-dim);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(0, 198, 255, 0.5);
+    transition: transform 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 22px rgba(0, 198, 255, 0.8);
+  }
+
+  /* Footer */
+  footer {
+    padding: 7px 12px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    background: var(--panel-bg);
+    border-top: 1px solid rgba(56, 189, 248, 0.2);
+    z-index: 10;
+  }
+</style>
+</head>
+<body>
+
+<div id="app-container">
+  <header>
+    <div class="brand">
+      <h1>方眼<span>ボウリング</span></h1>
+      <span class="spec-tag">CAD-LANE v2.0</span>
+    </div>
+    <div class="header-controls">
+      <button id="sound-toggle" class="btn-icon" title="サウンド切替">🔊 ON</button>
+      <button id="reset-btn" class="btn-icon" title="リスタート">↻ リセット</button>
+      <div class="total-score-box">
+        <span class="label">TOTAL SCORE</span>
+        <b id="total-score-val">0</b>
+      </div>
+    </div>
+  </header>
+
+  <div id="scoreboard"></div>
+
+  <div id="game-stage">
+    <canvas id="lane-canvas"></canvas>
+
+    <div id="hud-controls">
+      <div class="hud-row" id="pos-control-row">
+        <span class="hud-label">📐 立ち位置 (X-POS)</span>
+        <input type="range" id="pos-slider" min="-110" max="110" value="0">
+      </div>
+    </div>
+
+    <div id="banner-overlay">
+      <div class="banner-title" id="banner-main">STRIKE!</div>
+      <div class="banner-sub" id="banner-sub">PERFECT POCKET HIT</div>
+    </div>
+
+    <div id="result-modal">
+      <div class="modal-card">
+        <h2>GAME FINISHED</h2>
+        <div class="final-score" id="modal-score">0</div>
+        <div class="rank-badge" id="modal-rank">RANK: A</div>
+        <div class="stats-grid">
+          <div>ストライク: <b id="stat-strikes">0</b></div>
+          <div>スペア: <b id="stat-spares">0</b></div>
+          <div>ガター: <b id="stat-gutters">0</b></div>
+          <div>最大連続X: <b id="stat-streak">0</b></div>
+        </div>
+        <button class="btn-primary" id="play-again-btn">もう一度プレイ</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    ボールを下に引いて離すと投球 ／ 左右にずらして引くとカーブ回転
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
